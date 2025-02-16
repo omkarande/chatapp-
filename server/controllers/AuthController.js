@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 import User from "../models/UserModels.js";
 import { compare } from "bcrypt";
 import { renameSync, unlinkSync } from "fs";
-import { requireAuth } from "../middlewares/AuthMiddlewares.js";
 
 const maxAge = 3 * 24 * 60 * 60 * 1000;
 
