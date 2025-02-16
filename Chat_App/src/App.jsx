@@ -3,7 +3,7 @@ import { Button } from "./components/ui/button";
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 //import { Route } from "lucide-react";
 import Auth from "./pages/auth";
-import Chat from "./pages/chat";
+import Chat from "./pages/chat/index";
 import Profile from "./pages/profile";
 import { useAppStore } from "./store";
 import { apiClient } from "./lib/api-client.js";
