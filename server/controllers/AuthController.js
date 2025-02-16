@@ -103,43 +103,40 @@ export const login = async (request, response, next) => {
 //   }
 // };
 
-export const getUserInfo = [
-  requireAuth,
-  async (request, response, next) => {
-    try {
-      console.log("User ID in request:", request.userId); // Debug log
+export const getUserInfo = async (request, response, next) => {
+  try {
+    console.log("User ID in request:", request.userId); // Debug log
 
-      if (!request.userId) {
-        return response
-          .status(400)
-          .json({ error: "User ID not found in request." });
-      }
-
-      const userData = await User.findById(request.userId);
-
-      if (!userData) {
-        return response
-          .status(404)
-          .json({ error: "User with the given ID not found." });
-      }
-
-      return response.status(200).json({
-        id: userData.id,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        image: userData.image,
-        profileSetup: userData.profileSetup,
-        color: userData.color,
-      });
-    } catch (error) {
-      console.error("Error in getUserInfo:", error);
+    if (!request.userId) {
       return response
-        .status(500)
-        .json({ error: "Internal Server Error", details: error.message });
+        .status(400)
+        .json({ error: "User ID not found in request." });
     }
-  },
-];
+
+    const userData = await User.findById(request.userId);
+
+    if (!userData) {
+      return response
+        .status(404)
+        .json({ error: "User with the given ID not found." });
+    }
+
+    return response.status(200).json({
+      id: userData.id,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      image: userData.image,
+      profileSetup: userData.profileSetup,
+      color: userData.color,
+    });
+  } catch (error) {
+    console.error("Error in getUserInfo:", error);
+    return response
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
+  }
+};
 
 export const logout = async (request, response, next) => {
   try {
@@ -150,109 +147,98 @@ export const logout = async (request, response, next) => {
   }
 };
 
-export const updateProfile = [
-  requireAuth,
-  async (request, response, next) => {
-    try {
-      const { userId } = request;
+export const updateProfile = async (request, response, next) => {
+  try {
+    const { userId } = request;
 
-      const { firstName, lastName, color } = request.body;
+    const { firstName, lastName, color } = request.body;
 
-      if (!userId) {
-        return response.status(400).send("User ID is required.");
+    if (!userId) {
+      return response.status(400).send("User ID is required.");
+    }
+
+    if (!firstName || !lastName) {
+      return response.status(400).send("Firstname and Last name is required.");
+    }
+
+    const userData = await User.findByIdAndUpdate(
+      userId,
+      {
+        firstName,
+        lastName,
+        color,
+        profileSetup: true,
+      },
+      {
+        new: true,
+        runValidators: true,
       }
+    );
+    return response.status(200).json({
+      id: userData.id,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      image: userData.image,
+      profileSetup: userData.profileSetup,
+      color: userData.color,
+    });
+  } catch (error) {
+    return response.status(500).send("Internal Server Error.");
+  }
+};
 
-      if (!firstName || !lastName) {
-        return response
-          .status(400)
-          .send("Firstname and Last name is required.");
-      }
-
-      const userData = await User.findByIdAndUpdate(
-        userId,
-        {
-          firstName,
-          lastName,
-          color,
-          profileSetup: true,
-        },
+export const addProfileImage = async (request, response, next) => {
+  try {
+    if (request.file) {
+      const date = Date.now();
+      let fileName = "uploads/profiles/" + date + request.file.originalname;
+      renameSync(request.file.path, fileName);
+      const updatedUser = await User.findByIdAndUpdate(
+        request.userId,
+        { image: fileName },
         {
           new: true,
           runValidators: true,
         }
       );
-      return response.status(200).json({
-        id: userData.id,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        image: userData.image,
-        profileSetup: userData.profileSetup,
-        color: userData.color,
-      });
-    } catch (error) {
-      return response.status(500).send("Internal Server Error.");
+      //console.log(`here it's ok`);
+      return response.status(200).json({ image: updatedUser.image });
+    } else {
+      return response.status(404).send("File is required.");
     }
-  },
-];
+  } catch (error) {
+    console.log({ error });
+    return response.status(500).send("Internal Server Error.");
+  }
+};
 
-export const addProfileImage = [
-  requireAuth,
-  async (request, response, next) => {
-    try {
-      if (request.file) {
-        const date = Date.now();
-        let fileName = "uploads/profiles/" + date + request.file.originalname;
-        renameSync(request.file.path, fileName);
-        const updatedUser = await User.findByIdAndUpdate(
-          request.userId,
-          { image: fileName },
-          {
-            new: true,
-            runValidators: true,
-          }
-        );
-        //console.log(`here it's ok`);
-        return response.status(200).json({ image: updatedUser.image });
-      } else {
-        return response.status(404).send("File is required.");
-      }
-    } catch (error) {
-      console.log({ error });
-      return response.status(500).send("Internal Server Error.");
+export const removeProfileImage = async (request, response, next) => {
+  try {
+    const { userId } = request;
+
+    if (!userId) {
+      return response.status(400).send("User ID is required.");
     }
-  },
-];
 
-export const removeProfileImage = [
-  requireAuth,
-  async (request, response, next) => {
-    try {
-      const { userId } = request;
+    const user = await User.findById(userId);
 
-      if (!userId) {
-        return response.status(400).send("User ID is required.");
-      }
-
-      const user = await User.findById(userId);
-
-      if (!user) {
-        return response.status(404).send("User not found.");
-      }
-
-      if (user.image) {
-        unlinkSync(user.image);
-      }
-
-      user.image = null;
-      await user.save();
-
-      return response
-        .status(200)
-        .json({ message: "Profile image removed successfully." });
-    } catch (error) {
-      console.log({ error });
-      return response.status(500).send("Internal Server Error.");
+    if (!user) {
+      return response.status(404).send("User not found.");
     }
-  },
-];
+
+    if (user.image) {
+      unlinkSync(user.image);
+    }
+
+    user.image = null;
+    await user.save();
+
+    return response
+      .status(200)
+      .json({ message: "Profile image removed successfully." });
+  } catch (error) {
+    console.log({ error });
+    return response.status(500).send("Internal Server Error.");
+  }
+};

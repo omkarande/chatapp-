@@ -12,11 +12,11 @@ export const verifyToken = (request, response, next) => {
   });
 };
 
-export const requireAuth = (req, res, next) => {
-  verifyToken(req, res, () => {
-    if (!req.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    next();
-  });
-};
+// export const requireAuth = (req, res, next) => {
+//   verifyToken(req, res, () => {
+//     if (!req.userId) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+//     next();
+//   });
+// };
